@@ -149,11 +149,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   Select Free OpenRouter Model
                 </label>
                 <select
-                  value={settings.openRouterModel || 'meta-llama/llama-3.3-70b-instruct:free'}
+                  value={settings.openRouterModel || 'openrouter/free'}
                   onChange={(e) => onUpdateSettings({ openRouterModel: e.target.value })}
-                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:ring-1 focus:ring-indigo-500 outline-none text-slate-800"
+                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:ring-1 focus:ring-indigo-500 outline-none text-slate-800 font-medium"
                 >
-                  <option value="meta-llama/llama-3.3-70b-instruct:free">Meta Llama 3.3 70B Instruct (Free)</option>
+                  <option value="openrouter/free">openrouter/free (Auto-selects best available free model)</option>
+                  <option value="meta-llama/llama-3.3-70b-instruct:free font-normal">Meta Llama 3.3 70B Instruct (Free)</option>
                   <option value="deepseek/deepseek-r1:free">DeepSeek R1 (Free)</option>
                   <option value="qwen/qwen-2.5-coder-32b-instruct:free">Qwen 2.5 Coder 32B (Free)</option>
                   <option value="google/gemini-2.0-pro-exp-02-05:free">Google Gemini 2.0 Pro (Free)</option>

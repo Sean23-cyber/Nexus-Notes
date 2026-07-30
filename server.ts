@@ -445,7 +445,7 @@ async function startServer() {
       }
 
       const openRouterKey = process.env.OPENROUTER_API_KEY;
-      const targetModel = openRouterModel || 'meta-llama/llama-3.3-70b-instruct:free';
+      const targetModel = openRouterModel || 'openrouter/free';
 
       if (provider === 'openrouter' || (openRouterKey && provider !== 'gemini')) {
         if (!openRouterKey) {

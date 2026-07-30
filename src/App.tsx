@@ -29,7 +29,7 @@ export default function App() {
     return {
       theme: savedTheme || 'light',
       aiProvider: 'openrouter',
-      openRouterModel: 'meta-llama/llama-3.3-70b-instruct:free',
+      openRouterModel: 'openrouter/free',
       autoSaveIntervalMs: 1000,
       defaultFolder: 'Inbox'
     };

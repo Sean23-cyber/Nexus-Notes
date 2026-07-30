@@ -40,7 +40,7 @@ export const AIModal: React.FC<AIModalProps> = ({
           content: note.content,
           instruction: customInstruction,
           provider: settings?.aiProvider || 'openrouter',
-          openRouterModel: settings?.openRouterModel || 'meta-llama/llama-3.3-70b-instruct:free'
+          openRouterModel: settings?.openRouterModel || 'openrouter/free'
         })
       });
 
