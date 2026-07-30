@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+@layer base {
+  :root, [data-theme="light"] {
+    --bg-app: #F9FAFB;
+    --bg-sidebar: #F3F4F6;
+    --bg-surface: #FFFFFF;
+    --bg-hover: #E2E8F0;
+    --border-color: #E2E8F0;
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+    --text-muted: #94A3B8;
+    --accent: #4F46E5;
+  }
+
+  [data-theme="dark"] {
+    --bg-app: #0F172A;
+    --bg-sidebar: #1E293B;
+    --bg-surface: #1E293B;
+    --bg-hover: #334155;
+    --border-color: #334155;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --accent: #6366F1;
+  }
+
+  [data-theme="sepia"] {
+    --bg-app: #FBF0D9;
+    --bg-sidebar: #F3E5C8;
+    --bg-surface: #FFFDF5;
+    --bg-hover: #EADCB9;
+    --border-color: #E2D3B1;
+    --text-primary: #432818;
+    --text-secondary: #7F5539;
+    --text-muted: #9C6644;
+    --accent: #B07D62;
+  }
+
+  body {
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Theme Overrides for Dark Mode */
+  [data-theme="dark"] aside {
+    background-color: #1E293B !important;
+    border-color: #334155 !important;
+    color: #F8FAFC !important;
+  }
+  [data-theme="dark"] section {
+    background-color: #0F172A !important;
+    border-color: #334155 !important;
+    color: #F8FAFC !important;
+  }
+  [data-theme="dark"] main {
+    background-color: #0F172A !important;
+    color: #F8FAFC !important;
+  }
+  [data-theme="dark"] header {
+    background-color: #1E293B !important;
+    border-color: #334155 !important;
+    color: #F8FAFC !important;
+  }
+  [data-theme="dark"] input, [data-theme="dark"] textarea, [data-theme="dark"] select {
+    color: #F8FAFC !important;
+  }
+
+  /* Theme Overrides for Sepia Mode */
+  [data-theme="sepia"] aside {
+    background-color: #F3E5C8 !important;
+    border-color: #E2D3B1 !important;
+    color: #432818 !important;
+  }
+  [data-theme="sepia"] section {
+    background-color: #FFFDF5 !important;
+    border-color: #E2D3B1 !important;
+    color: #432818 !important;
+  }
+  [data-theme="sepia"] main {
+    background-color: #FBF0D9 !important;
+    color: #432818 !important;
+  }
+  [data-theme="sepia"] header {
+    background-color: #FFFDF5 !important;
+    border-color: #E2D3B1 !important;
+    color: #432818 !important;
+  }
+  [data-theme="sepia"] input, [data-theme="sepia"] textarea, [data-theme="sepia"] select {
+    color: #432818 !important;
+  }
+}
+
+/* Custom subtle scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
