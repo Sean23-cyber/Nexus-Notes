@@ -79,7 +79,7 @@ export interface AIActionResponse {
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'sepia';
-  aiProvider: 'gemini' | 'openrouter' | 'ollama';
+  aiProvider: 'openrouter' | 'ollama';
   openRouterModel?: string;
   ollamaEndpoint?: string;
   autoSaveIntervalMs: number;

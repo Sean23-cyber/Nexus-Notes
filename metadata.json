@@ -2,5 +2,5 @@
   "name": "Local-First AI Notes Application",
   "description": "A fast, local-first, offline-first, privacy-first AI-assisted notes application with full-text search and rich text editor.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": ["MAJOR_CAPABILITY_CUSTOM"]
 }

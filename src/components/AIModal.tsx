@@ -155,7 +155,7 @@ export const AIModal: React.FC<AIModalProps> = ({
             {isLoading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Processing with Gemini...</span>
+                <span>Processing with AI...</span>
               </>
             ) : (
               <>

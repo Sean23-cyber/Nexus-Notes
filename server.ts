@@ -3,7 +3,6 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
 
 const currentFilename = typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url);
 const currentDirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(currentFilename);
@@ -49,7 +48,7 @@ class NoteRepository(BaseRepository):
 \`\`\`
 
 ## 2. AI Assistant Layer
-AI features must be context-aware but non-intrusive. We use local LLMs via Ollama or server-side Gemini to maintain the privacy-first promise.`,
+AI features must be context-aware but non-intrusive. We use local LLMs via Ollama or server-side OpenRouter to maintain the privacy-first promise.`,
     preview: 'Apply Clean Architecture principles adapted pragmatically for a FastAPI + SQLAlchemy application. Our primary goal is high maintainability...',
     folder: 'Inbox',
     tags: ['arch', 'spec', 'v1'],
@@ -145,13 +144,6 @@ async function startServer() {
 
   app.use(express.json({ limit: '20mb' }));
 
-  // Initialize Gemini AI Client lazily
-  function getGeminiClient(): GoogleGenAI | null {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return null;
-    return new GoogleGenAI({ apiKey });
-  }
-
   // 1. Healthcheck Endpoint
   app.get('/api/health', (req, res) => {
     res.json({
@@ -159,8 +151,7 @@ async function startServer() {
       timestamp: new Date().toISOString(),
       architecture: 'clean-local-first',
       database: 'SQLite (WAL mode simulation)',
-      fts: 'FTS5 Enabled',
-      hasGeminiApiKey: Boolean(process.env.GEMINI_API_KEY)
+      fts: 'FTS5 Enabled'
     });
   });
 
@@ -402,7 +393,7 @@ async function startServer() {
     res.json(results);
   });
 
-  // 10. AI Assistant Endpoint (Powered by OpenRouter free models / Gemini / Local fallback)
+  // 10. AI Assistant Endpoint (Powered by OpenRouter free models / Ollama / Local fallback)
   app.post('/api/ai/action', async (req, res) => {
     const { action, content, instruction, targetLanguage, provider = 'openrouter', openRouterModel } = req.body;
 
@@ -447,7 +438,7 @@ async function startServer() {
       const openRouterKey = process.env.OPENROUTER_API_KEY;
       const targetModel = openRouterModel || 'openrouter/free';
 
-      if (provider === 'openrouter' || (openRouterKey && provider !== 'gemini')) {
+      if (provider === 'openrouter' || openRouterKey) {
         if (!openRouterKey) {
           return res.status(400).json({
             error: 'OPENROUTER_API_KEY environment variable is not set. Please add OPENROUTER_API_KEY to your environment or .env file.'
@@ -501,38 +492,6 @@ async function startServer() {
           tags,
           suggestedFolder,
           modelUsed: `${targetModel} (OpenRouter)`
-        });
-      }
-
-      const ai = getGeminiClient();
-      if (ai && provider === 'gemini') {
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt,
-        });
-
-        const textResult = response.text || 'AI response received.';
-        let tags: string[] | undefined;
-        let suggestedFolder: string | undefined;
-
-        if (action === 'generate_tags') {
-          try {
-            const parsed = JSON.parse(textResult.replace(/```json|```/g, ''));
-            if (Array.isArray(parsed)) tags = parsed;
-          } catch {
-            tags = textResult.split(',').map((s) => s.trim().replace(/^#/, ''));
-          }
-        }
-
-        if (action === 'suggest_folder') {
-          suggestedFolder = textResult.trim().replace(/['"]/g, '');
-        }
-
-        return res.json({
-          result: textResult,
-          tags,
-          suggestedFolder,
-          modelUsed: 'gemini-2.5-flash (Google AI)'
         });
       }
 
