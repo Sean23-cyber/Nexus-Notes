@@ -99,18 +99,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">
               AI Provider
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <button
+                onClick={() => onUpdateSettings({ aiProvider: 'openrouter' })}
+                className={`p-3 border rounded-lg text-left transition-colors ${
+                  settings.aiProvider === 'openrouter'
+                    ? 'border-indigo-600 bg-indigo-50/60 text-indigo-900 font-semibold shadow-xs'
+                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <div className="text-xs font-bold mb-0.5">OpenRouter</div>
+                <div className="text-[10px] text-slate-500">
+                  Free Models API
+                </div>
+              </button>
+
               <button
                 onClick={() => onUpdateSettings({ aiProvider: 'gemini' })}
                 className={`p-3 border rounded-lg text-left transition-colors ${
                   settings.aiProvider === 'gemini'
-                    ? 'border-indigo-600 bg-indigo-50/60 text-indigo-900 font-semibold'
+                    ? 'border-indigo-600 bg-indigo-50/60 text-indigo-900 font-semibold shadow-xs'
                     : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
                 <div className="text-xs font-bold mb-0.5">Google Gemini</div>
                 <div className="text-[10px] text-slate-500">
-                  Cloud AI via process.env.GEMINI_API_KEY
+                  Google AI Studio
                 </div>
               </button>
 
@@ -118,16 +132,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onClick={() => onUpdateSettings({ aiProvider: 'ollama' })}
                 className={`p-3 border rounded-lg text-left transition-colors ${
                   settings.aiProvider === 'ollama'
-                    ? 'border-indigo-600 bg-indigo-50/60 text-indigo-900 font-semibold'
+                    ? 'border-indigo-600 bg-indigo-50/60 text-indigo-900 font-semibold shadow-xs'
                     : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <div className="text-xs font-bold mb-0.5">Ollama (Offline)</div>
+                <div className="text-xs font-bold mb-0.5">Ollama</div>
                 <div className="text-[10px] text-slate-500">
-                  Fully local LLM execution on device
+                  Local offline LLM
                 </div>
               </button>
             </div>
+
+            {settings.aiProvider === 'openrouter' && (
+              <div className="p-3 bg-indigo-50/40 border border-indigo-100 rounded-lg space-y-2">
+                <label className="text-xs font-semibold text-slate-700 block">
+                  Select Free OpenRouter Model
+                </label>
+                <select
+                  value={settings.openRouterModel || 'meta-llama/llama-3.3-70b-instruct:free'}
+                  onChange={(e) => onUpdateSettings({ openRouterModel: e.target.value })}
+                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:ring-1 focus:ring-indigo-500 outline-none text-slate-800"
+                >
+                  <option value="meta-llama/llama-3.3-70b-instruct:free">Meta Llama 3.3 70B Instruct (Free)</option>
+                  <option value="deepseek/deepseek-r1:free">DeepSeek R1 (Free)</option>
+                  <option value="qwen/qwen-2.5-coder-32b-instruct:free">Qwen 2.5 Coder 32B (Free)</option>
+                  <option value="google/gemini-2.0-pro-exp-02-05:free">Google Gemini 2.0 Pro (Free)</option>
+                  <option value="google/gemini-2.0-flash-lite-preview-02-05:free">Google Gemini 2.0 Flash Lite (Free)</option>
+                  <option value="mistralai/mistral-7b-instruct:free">Mistral 7B Instruct (Free)</option>
+                </select>
+                <p className="text-[10px] text-slate-500">
+                  Requires <code className="bg-slate-200 px-1 py-0.5 rounded text-slate-700 font-mono">OPENROUTER_API_KEY</code> in environment variables.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Database & Sync Guarantee */}

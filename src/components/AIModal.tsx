@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Sparkles, Check, RefreshCw, X, ArrowRight, Wand2 } from 'lucide-react';
-import { AIActionType, AIActionResponse, Note } from '../types';
+import { AIActionType, AIActionResponse, Note, AppSettings } from '../types';
 
 interface AIModalProps {
   isOpen: boolean;
   onClose: () => void;
   note: Note | null;
   initialAction?: AIActionType;
+  settings?: AppSettings;
   onApplyResult: (result: { content?: string; title?: string; tags?: string[]; folder?: string }) => void;
 }
 
@@ -15,6 +16,7 @@ export const AIModal: React.FC<AIModalProps> = ({
   onClose,
   note,
   initialAction = 'rewrite',
+  settings,
   onApplyResult
 }) => {
   const [selectedAction, setSelectedAction] = useState<AIActionType>(initialAction);
@@ -36,7 +38,9 @@ export const AIModal: React.FC<AIModalProps> = ({
         body: JSON.stringify({
           action: selectedAction,
           content: note.content,
-          instruction: customInstruction
+          instruction: customInstruction,
+          provider: settings?.aiProvider || 'openrouter',
+          openRouterModel: settings?.openRouterModel || 'meta-llama/llama-3.3-70b-instruct:free'
         })
       });
 

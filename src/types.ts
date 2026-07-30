@@ -79,7 +79,8 @@ export interface AIActionResponse {
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'sepia';
-  aiProvider: 'gemini' | 'openai' | 'ollama';
+  aiProvider: 'gemini' | 'openrouter' | 'ollama';
+  openRouterModel?: string;
   ollamaEndpoint?: string;
   autoSaveIntervalMs: number;
   defaultFolder: string;

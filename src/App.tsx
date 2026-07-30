@@ -28,7 +28,8 @@ export default function App() {
     const savedTheme = localStorage.getItem('nexus_theme') as 'light' | 'dark' | 'sepia' | null;
     return {
       theme: savedTheme || 'light',
-      aiProvider: 'gemini',
+      aiProvider: 'openrouter',
+      openRouterModel: 'meta-llama/llama-3.3-70b-instruct:free',
       autoSaveIntervalMs: 1000,
       defaultFolder: 'Inbox'
     };
@@ -323,6 +324,7 @@ export default function App() {
         onClose={() => setIsAIModalOpen(false)}
         note={selectedNote}
         initialAction={aiModalInitialAction}
+        settings={settings}
         onApplyResult={(res) => {
           if (res.content) handleUpdateNote({ content: res.content });
           if (res.title) handleUpdateNote({ title: res.title });

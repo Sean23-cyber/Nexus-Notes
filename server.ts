@@ -402,17 +402,15 @@ async function startServer() {
     res.json(results);
   });
 
-  // 10. AI Assistant Endpoint (Powered by Gemini / Ollama fallback)
+  // 10. AI Assistant Endpoint (Powered by OpenRouter free models / Gemini / Local fallback)
   app.post('/api/ai/action', async (req, res) => {
-    const { action, content, instruction, targetLanguage } = req.body;
+    const { action, content, instruction, targetLanguage, provider = 'openrouter', openRouterModel } = req.body;
 
     if (!content && action !== 'suggest_folder') {
       return res.status(400).json({ error: 'Content is required for AI actions' });
     }
 
     try {
-      const ai = getGeminiClient();
-
       let prompt = '';
       switch (action) {
         case 'rewrite':
@@ -446,7 +444,68 @@ async function startServer() {
           prompt = `Improve the following text: "${content}"`;
       }
 
-      if (ai) {
+      const openRouterKey = process.env.OPENROUTER_API_KEY;
+      const targetModel = openRouterModel || 'meta-llama/llama-3.3-70b-instruct:free';
+
+      if (provider === 'openrouter' || (openRouterKey && provider !== 'gemini')) {
+        if (!openRouterKey) {
+          return res.status(400).json({
+            error: 'OPENROUTER_API_KEY environment variable is not set. Please add OPENROUTER_API_KEY to your environment or .env file.'
+          });
+        }
+
+        const openRouterRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openRouterKey}`,
+            'HTTP-Referer': 'https://github.com/Sean23-cyber/Nexus-Notes',
+            'X-Title': 'Nexus Notes',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: targetModel,
+            messages: [
+              { role: 'system', content: 'You are an AI assistant integrated into a local-first note taking application. Provide helpful, direct, accurate responses without unnecessary conversation.' },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.3
+          })
+        });
+
+        if (!openRouterRes.ok) {
+          const errData = await openRouterRes.text();
+          throw new Error(`OpenRouter API error (${openRouterRes.status}): ${errData}`);
+        }
+
+        const orJson: any = await openRouterRes.json();
+        const textResult = orJson?.choices?.[0]?.message?.content || 'No response content returned.';
+
+        let tags: string[] | undefined;
+        let suggestedFolder: string | undefined;
+
+        if (action === 'generate_tags') {
+          try {
+            const parsed = JSON.parse(textResult.replace(/```json|```/g, '').trim());
+            if (Array.isArray(parsed)) tags = parsed;
+          } catch {
+            tags = textResult.split(',').map((s) => s.trim().replace(/^#/, ''));
+          }
+        }
+
+        if (action === 'suggest_folder') {
+          suggestedFolder = textResult.trim().replace(/['"]/g, '');
+        }
+
+        return res.json({
+          result: textResult,
+          tags,
+          suggestedFolder,
+          modelUsed: `${targetModel} (OpenRouter)`
+        });
+      }
+
+      const ai = getGeminiClient();
+      if (ai && provider === 'gemini') {
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
           contents: prompt,
@@ -475,30 +534,30 @@ async function startServer() {
           suggestedFolder,
           modelUsed: 'gemini-2.5-flash (Google AI)'
         });
-      } else {
-        // High quality fallback when Gemini API key is not configured in environment
-        let textResult = '';
-        if (action === 'summarize') {
-          textResult = `• Key Concept: ${content.slice(0, 80)}...\n• Local Storage: WAL-mode SQLite for local persistence\n• High Speed: Sub-100ms FTS5 search architecture`;
-        } else if (action === 'generate_title') {
-          textResult = content.split('\n')[0].slice(0, 35) || 'Polished Local Note';
-        } else if (action === 'fix_grammar') {
-          textResult = content.replace(/\s+/g, ' ').trim();
-        } else if (action === 'generate_tags') {
-          return res.json({
-            result: '["notes", "local", "ai"]',
-            tags: ['notes', 'local', 'ai'],
-            modelUsed: 'Local Fallback'
-          });
-        } else {
-          textResult = `${content}\n\n[AI Polished & Refined Local Output]`;
-        }
-
-        return res.json({
-          result: textResult,
-          modelUsed: 'Local Engine (Configure GEMINI_API_KEY in Secrets for live AI)'
-        });
       }
+
+      // Fallback
+      let textResult = '';
+      if (action === 'summarize') {
+        textResult = `• Key Concept: ${content.slice(0, 80)}...\n• Local Storage: WAL-mode SQLite for local persistence\n• High Speed: Sub-100ms FTS5 search architecture`;
+      } else if (action === 'generate_title') {
+        textResult = content.split('\n')[0].slice(0, 35) || 'Polished Local Note';
+      } else if (action === 'fix_grammar') {
+        textResult = content.replace(/\s+/g, ' ').trim();
+      } else if (action === 'generate_tags') {
+        return res.json({
+          result: '["notes", "local", "ai"]',
+          tags: ['notes', 'local', 'ai'],
+          modelUsed: 'Local Fallback'
+        });
+      } else {
+        textResult = `${content}\n\n[AI Polished & Refined Local Output]`;
+      }
+
+      return res.json({
+        result: textResult,
+        modelUsed: 'Local Engine (Configure OPENROUTER_API_KEY in environment for free OpenRouter LLMs)'
+      });
     } catch (err: any) {
       console.error('AI Processing Error:', err);
       res.status(500).json({ error: 'AI processing failed: ' + (err?.message || 'Unknown error') });
