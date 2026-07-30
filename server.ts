@@ -439,16 +439,9 @@ async function startServer() {
       const openRouterKey = process.env.OPENROUTER_API_KEY;
       const targetModel = openRouterModel || 'openrouter/free';
 
-      if (provider === 'groq' || (groqKey && provider !== 'openrouter')) {
-        if (!groqKey) {
-          if (!openRouterKey) {
-            return res.status(400).json({
-              error: 'GROQ_API_KEY environment variable is not set. Please add GROQ_API_KEY to your environment or .env file.'
-            });
-          }
-        } else {
-          const modelToUse = groqModel || 'llama-3.3-70b-versatile';
-          const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      if (provider === 'groq' && groqKey && groqKey !== 'YOUR_GROQ_API_KEY') {
+        const modelToUse = groqModel || 'llama-3.3-70b-versatile';
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${groqKey}`,
@@ -491,7 +484,6 @@ async function startServer() {
               modelUsed: `${modelToUse} (Groq Cloud)`
             });
           }
-        }
       }
 
       if (provider === 'openrouter' || openRouterKey) {

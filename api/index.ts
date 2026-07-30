@@ -217,35 +217,33 @@ export function createApp() {
     let prompt = `${action}: ${content}`;
     if (instruction) prompt += `\nInstruction: ${instruction}`;
 
-    // 1. Try Groq Cloud if selected or GROQ_API_KEY present
-    if ((provider === 'groq' || groqKey) && provider !== 'openrouter') {
-      if (groqKey) {
-        try {
-          const modelToUse = groqModel || 'llama-3.3-70b-versatile';
-          const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${groqKey}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              model: modelToUse,
-              messages: [
-                { role: 'system', content: 'You are an AI assistant integrated into a local-first note taking app. Provide direct, helpful, concise responses without conversational fluff.' },
-                { role: 'user', content: prompt }
-              ],
-              temperature: 0.3
-            })
-          });
+    // 1. Try Groq Cloud if selected and valid GROQ_API_KEY is configured
+    if (provider === 'groq' && groqKey && groqKey !== 'YOUR_GROQ_API_KEY') {
+      try {
+        const modelToUse = groqModel || 'llama-3.3-70b-versatile';
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${groqKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: modelToUse,
+            messages: [
+              { role: 'system', content: 'You are an AI assistant integrated into a local-first note taking app. Provide direct, helpful, concise responses without conversational fluff.' },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.3
+          })
+        });
 
-          if (groqRes.ok) {
-            const groqJson: any = await groqRes.json();
-            const textResult = groqJson?.choices?.[0]?.message?.content || 'AI complete';
-            return res.json({ result: textResult, modelUsed: `${modelToUse} (Groq)` });
-          }
-        } catch (err: any) {
-          console.error('Groq API error:', err);
+        if (groqRes.ok) {
+          const groqJson: any = await groqRes.json();
+          const textResult = groqJson?.choices?.[0]?.message?.content || 'AI complete';
+          return res.json({ result: textResult, modelUsed: `${modelToUse} (Groq)` });
         }
+      } catch (err: any) {
+        console.error('Groq API error:', err);
       }
     }
 
