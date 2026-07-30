@@ -33,8 +33,21 @@ const INITIAL_NOTES: NoteRecord[] = [
   {
     id: 'note-1',
     title: 'Architectural Design Patterns',
-    content: `Apply Clean Architecture principles adapted pragmatically for a FastAPI + SQLAlchemy application. Our primary goal is high maintainability and testability.`,
-    preview: 'Apply Clean Architecture principles adapted pragmatically for a FastAPI...',
+    content: `Apply Clean Architecture principles adapted pragmatically for a FastAPI + SQLAlchemy application. Our primary goal is high maintainability and testability.
+
+## 1. Repository Pattern
+All direct database access goes through repository classes. No raw SQLAlchemy queries should be scattered through route handlers or services.
+
+\`\`\`python
+class NoteRepository(BaseRepository):
+    def get_by_id(id: UUID):
+        # Repository implementation details here
+        pass
+\`\`\`
+
+## 2. AI Assistant Layer
+AI features must be context-aware but non-intrusive. We use local LLMs via Ollama or server-side OpenRouter to maintain privacy.`,
+    preview: 'Apply Clean Architecture principles adapted pragmatically for a FastAPI + SQLAlchemy application...',
     folder: 'Inbox',
     tags: ['arch', 'spec', 'v1'],
     isPinned: true,
@@ -53,21 +66,151 @@ export function createApp() {
   const app = express();
   app.use(express.json());
 
+  // 1. Health check
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // 2. Get Notes
   app.get('/api/notes', (req, res) => {
-    const { folder, tag, state = 'active', isFavorite } = req.query;
+    const { folder, state = 'active', tag, isFavorite } = req.query;
     let filtered = notesStore.filter((n) => n.state === state);
-    if (folder && folder !== 'All Notes') filtered = filtered.filter((n) => n.folder === folder);
-    if (tag) filtered = filtered.filter((n) => n.tags.includes(String(tag)));
-    if (isFavorite === 'true') filtered = filtered.filter((n) => n.isFavorite);
+
+    if (folder && folder !== 'All Notes') {
+      if (folder === 'Favorites') {
+        filtered = filtered.filter((n) => n.isFavorite);
+      } else {
+        filtered = filtered.filter((n) => n.folder === folder);
+      }
+    }
+
+    if (isFavorite === 'true') {
+      filtered = filtered.filter((n) => n.isFavorite);
+    }
+
+    if (tag) {
+      filtered = filtered.filter((n) => n.tags.includes(String(tag)));
+    }
+
+    filtered.sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+
     res.json(filtered);
   });
 
+  // 3. Create Note (Fix for New Button)
+  app.post('/api/notes', (req, res) => {
+    const { title = 'Untitled Note', content = '', folder = 'Inbox', tags = [], category = 'General' } = req.body;
+    const now = new Date().toISOString();
+    const preview = content.slice(0, 150).replace(/\n/g, ' ') || 'Empty note...';
+
+    const newNote: NoteRecord = {
+      id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      title,
+      content,
+      preview,
+      folder,
+      tags,
+      isPinned: false,
+      isFavorite: false,
+      state: 'active',
+      category,
+      createdAt: now,
+      updatedAt: now,
+      versions: [
+        {
+          id: `ver-${Date.now()}`,
+          noteId: '',
+          title,
+          content,
+          savedAt: now,
+          changeSummary: 'Created note'
+        }
+      ]
+    };
+    newNote.versions[0].noteId = newNote.id;
+
+    notesStore.unshift(newNote);
+    res.status(201).json(newNote);
+  });
+
+  // 4. Update Note (Auto-save)
+  app.put('/api/notes/:id', (req, res) => {
+    const noteIndex = notesStore.findIndex((n) => n.id === req.params.id);
+    if (noteIndex === -1) {
+      return res.status(404).json({ error: 'Note not found' });
+    }
+
+    const currentNote = notesStore[noteIndex];
+    const { title, content, folder, tags, category, isPinned, isFavorite, state } = req.body;
+
+    const now = new Date().toISOString();
+    const updatedContent = content !== undefined ? content : currentNote.content;
+    const updatedTitle = title !== undefined ? title : currentNote.title;
+    const preview = updatedContent.slice(0, 150).replace(/\n/g, ' ') || 'Empty note...';
+
+    const updatedNote: NoteRecord = {
+      ...currentNote,
+      title: updatedTitle,
+      content: updatedContent,
+      preview,
+      folder: folder !== undefined ? folder : currentNote.folder,
+      tags: tags !== undefined ? tags : currentNote.tags,
+      category: category !== undefined ? category : currentNote.category,
+      isPinned: isPinned !== undefined ? isPinned : currentNote.isPinned,
+      isFavorite: isFavorite !== undefined ? isFavorite : currentNote.isFavorite,
+      state: state !== undefined ? state : currentNote.state,
+      updatedAt: now
+    };
+
+    notesStore[noteIndex] = updatedNote;
+    res.json(updatedNote);
+  });
+
+  // 5. Toggle Pin / Favorite / State
+  app.patch('/api/notes/:id', (req, res) => {
+    const note = notesStore.find((n) => n.id === req.params.id);
+    if (!note) return res.status(404).json({ error: 'Note not found' });
+
+    const fields = ['isPinned', 'isFavorite', 'state', 'folder', 'category'];
+    fields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        (note as any)[field] = req.body[field];
+      }
+    });
+    note.updatedAt = new Date().toISOString();
+    res.json(note);
+  });
+
+  // 6. Delete Note
+  app.delete('/api/notes/:id', (req, res) => {
+    notesStore = notesStore.filter((n) => n.id !== req.params.id);
+    res.json({ message: 'Note deleted' });
+  });
+
+  // 7. Search
+  app.get('/api/search', (req, res) => {
+    const q = (req.query.q as string || '').trim().toLowerCase();
+    if (!q) return res.json([]);
+
+    const results = notesStore
+      .filter((n) => n.state === 'active' && (n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)))
+      .map((note) => ({
+        note,
+        score: 1,
+        matchedSnippet: note.preview,
+        highlights: [q]
+      }));
+
+    res.json(results);
+  });
+
+  // 8. AI Action
   app.post('/api/ai/action', async (req, res) => {
-    const { action, content, instruction, targetLanguage, provider = 'openrouter', openRouterModel } = req.body;
+    const { action, content, instruction, openRouterModel } = req.body;
     const openRouterKey = process.env.OPENROUTER_API_KEY;
     const targetModel = openRouterModel || 'openrouter/free';
 
@@ -84,7 +227,7 @@ export function createApp() {
           body: JSON.stringify({
             model: targetModel,
             messages: [
-              { role: 'system', content: 'You are an AI assistant in a local-first notes app.' },
+              { role: 'system', content: 'You are an AI assistant integrated into a local-first note taking app.' },
               { role: 'user', content: `${action}: ${content}` }
             ]
           })
@@ -92,7 +235,7 @@ export function createApp() {
 
         if (openRouterRes.ok) {
           const orJson: any = await openRouterRes.json();
-          const textResult = orJson?.choices?.[0]?.message?.content || 'Done';
+          const textResult = orJson?.choices?.[0]?.message?.content || 'AI complete';
           return res.json({ result: textResult, modelUsed: `${targetModel} (OpenRouter)` });
         }
       } catch (err: any) {
