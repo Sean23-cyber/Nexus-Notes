@@ -28,7 +28,8 @@ export default function App() {
     const savedTheme = localStorage.getItem('nexus_theme') as 'light' | 'dark' | 'sepia' | null;
     return {
       theme: savedTheme || 'light',
-      aiProvider: 'openrouter',
+      aiProvider: 'groq',
+      groqModel: 'llama-3.3-70b-versatile',
       openRouterModel: 'openrouter/free',
       autoSaveIntervalMs: 1000,
       defaultFolder: 'Inbox'

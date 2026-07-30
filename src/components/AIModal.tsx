@@ -39,7 +39,8 @@ export const AIModal: React.FC<AIModalProps> = ({
           action: selectedAction,
           content: note.content,
           instruction: customInstruction,
-          provider: settings?.aiProvider || 'openrouter',
+          provider: settings?.aiProvider || 'groq',
+          groqModel: settings?.groqModel || 'llama-3.3-70b-versatile',
           openRouterModel: settings?.openRouterModel || 'openrouter/free'
         })
       });

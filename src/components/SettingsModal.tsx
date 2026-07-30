@@ -99,7 +99,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">
               AI Provider
             </label>
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <button
+                onClick={() => onUpdateSettings({ aiProvider: 'groq' })}
+                className={`p-3 border rounded-lg text-left transition-colors ${
+                  settings.aiProvider === 'groq'
+                    ? 'border-indigo-600 bg-indigo-50/60 text-indigo-900 font-semibold shadow-xs'
+                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <div className="text-xs font-bold mb-0.5">Groq Cloud</div>
+                <div className="text-[10px] text-slate-500">
+                  Ultra Fast LPU API
+                </div>
+              </button>
+
               <button
                 onClick={() => onUpdateSettings({ aiProvider: 'openrouter' })}
                 className={`p-3 border rounded-lg text-left transition-colors ${
@@ -128,6 +142,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </button>
             </div>
+
+            {settings.aiProvider === 'groq' && (
+              <div className="p-3 bg-indigo-50/40 border border-indigo-100 rounded-lg space-y-2">
+                <label className="text-xs font-semibold text-slate-700 block">
+                  Select Groq Model
+                </label>
+                <select
+                  value={settings.groqModel || 'llama-3.3-70b-versatile'}
+                  onChange={(e) => onUpdateSettings({ groqModel: e.target.value })}
+                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:ring-1 focus:ring-indigo-500 outline-none text-slate-800 font-medium"
+                >
+                  <option value="llama-3.3-70b-versatile">Llama 3.3 70B Versatile (Groq)</option>
+                  <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant (Ultra-fast)</option>
+                  <option value="mixtral-8x7b-32768">Mixtral 8x7B (Groq)</option>
+                  <option value="gemma2-9b-it">Gemma 2 9B (Groq)</option>
+                </select>
+                <p className="text-[10px] text-slate-500">
+                  Requires <code className="bg-slate-200 px-1 py-0.5 rounded text-slate-700 font-mono">GROQ_API_KEY</code> in environment variables.
+                </p>
+              </div>
+            )}
 
             {settings.aiProvider === 'openrouter' && (
               <div className="p-3 bg-indigo-50/40 border border-indigo-100 rounded-lg space-y-2">

@@ -393,9 +393,9 @@ async function startServer() {
     res.json(results);
   });
 
-  // 10. AI Assistant Endpoint (Powered by OpenRouter free models / Ollama / Local fallback)
+  // 10. AI Assistant Endpoint (Powered by Groq Cloud / OpenRouter free models / Ollama / Local fallback)
   app.post('/api/ai/action', async (req, res) => {
-    const { action, content, instruction, targetLanguage, provider = 'openrouter', openRouterModel } = req.body;
+    const { action, content, instruction, targetLanguage, provider = 'groq', groqModel, openRouterModel } = req.body;
 
     if (!content && action !== 'suggest_folder') {
       return res.status(400).json({ error: 'Content is required for AI actions' });
@@ -435,8 +435,64 @@ async function startServer() {
           prompt = `Improve the following text: "${content}"`;
       }
 
+      const groqKey = process.env.GROQ_API_KEY;
       const openRouterKey = process.env.OPENROUTER_API_KEY;
       const targetModel = openRouterModel || 'openrouter/free';
+
+      if (provider === 'groq' || (groqKey && provider !== 'openrouter')) {
+        if (!groqKey) {
+          if (!openRouterKey) {
+            return res.status(400).json({
+              error: 'GROQ_API_KEY environment variable is not set. Please add GROQ_API_KEY to your environment or .env file.'
+            });
+          }
+        } else {
+          const modelToUse = groqModel || 'llama-3.3-70b-versatile';
+          const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${groqKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: modelToUse,
+              messages: [
+                { role: 'system', content: 'You are an AI assistant integrated into a local-first note taking application. Provide helpful, direct, accurate responses without unnecessary conversation.' },
+                { role: 'user', content: prompt }
+              ],
+              temperature: 0.3
+            })
+          });
+
+          if (groqRes.ok) {
+            const groqJson: any = await groqRes.json();
+            const textResult = groqJson?.choices?.[0]?.message?.content || 'No response content returned.';
+
+            let tags: string[] | undefined;
+            let suggestedFolder: string | undefined;
+
+            if (action === 'generate_tags') {
+              try {
+                const parsed = JSON.parse(textResult.replace(/```json|```/g, '').trim());
+                if (Array.isArray(parsed)) tags = parsed;
+              } catch {
+                tags = textResult.split(',').map((s) => s.trim().replace(/^#/, ''));
+              }
+            }
+
+            if (action === 'suggest_folder') {
+              suggestedFolder = textResult.trim().replace(/['"]/g, '');
+            }
+
+            return res.json({
+              result: textResult,
+              tags,
+              suggestedFolder,
+              modelUsed: `${modelToUse} (Groq Cloud)`
+            });
+          }
+        }
+      }
 
       if (provider === 'openrouter' || openRouterKey) {
         if (!openRouterKey) {

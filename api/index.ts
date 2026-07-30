@@ -208,14 +208,51 @@ export function createApp() {
     res.json(results);
   });
 
-  // 8. AI Action
+  // 8. AI Action (Powered by Groq Cloud / OpenRouter / Local fallback)
   app.post('/api/ai/action', async (req, res) => {
-    const { action, content, instruction, openRouterModel } = req.body;
+    const { action, content, instruction, targetLanguage, provider = 'groq', groqModel, openRouterModel } = req.body;
+    const groqKey = process.env.GROQ_API_KEY;
     const openRouterKey = process.env.OPENROUTER_API_KEY;
-    const targetModel = openRouterModel || 'openrouter/free';
 
+    let prompt = `${action}: ${content}`;
+    if (instruction) prompt += `\nInstruction: ${instruction}`;
+
+    // 1. Try Groq Cloud if selected or GROQ_API_KEY present
+    if ((provider === 'groq' || groqKey) && provider !== 'openrouter') {
+      if (groqKey) {
+        try {
+          const modelToUse = groqModel || 'llama-3.3-70b-versatile';
+          const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${groqKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: modelToUse,
+              messages: [
+                { role: 'system', content: 'You are an AI assistant integrated into a local-first note taking app. Provide direct, helpful, concise responses without conversational fluff.' },
+                { role: 'user', content: prompt }
+              ],
+              temperature: 0.3
+            })
+          });
+
+          if (groqRes.ok) {
+            const groqJson: any = await groqRes.json();
+            const textResult = groqJson?.choices?.[0]?.message?.content || 'AI complete';
+            return res.json({ result: textResult, modelUsed: `${modelToUse} (Groq)` });
+          }
+        } catch (err: any) {
+          console.error('Groq API error:', err);
+        }
+      }
+    }
+
+    // 2. Try OpenRouter as fallback/provider
     if (openRouterKey) {
       try {
+        const targetModel = openRouterModel || 'openrouter/free';
         const openRouterRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -228,7 +265,7 @@ export function createApp() {
             model: targetModel,
             messages: [
               { role: 'system', content: 'You are an AI assistant integrated into a local-first note taking app.' },
-              { role: 'user', content: `${action}: ${content}` }
+              { role: 'user', content: prompt }
             ]
           })
         });

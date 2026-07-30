@@ -79,7 +79,8 @@ export interface AIActionResponse {
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'sepia';
-  aiProvider: 'openrouter' | 'ollama';
+  aiProvider: 'groq' | 'openrouter' | 'ollama';
+  groqModel?: string;
   openRouterModel?: string;
   ollamaEndpoint?: string;
   autoSaveIntervalMs: number;
