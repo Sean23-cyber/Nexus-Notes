@@ -2,7 +2,7 @@ services:
   - type: web
     name: nexus-notes
     env: node
-    buildCommand: npm run build
+    buildCommand: bun install && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
